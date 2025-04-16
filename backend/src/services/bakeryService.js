@@ -56,3 +56,60 @@ export const getOrderStatus = async (orderId) => {
 export const listUsers = async () => {
   return prisma.user.findMany();
 };
+
+export const addToCart = async (userId, productId, quantity) => {
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) throw new Error('Product not found');
+
+  let cart = await prisma.cart.findUnique({
+    where: { userId },
+    include: { items: true }
+  });
+
+  if (!cart) {
+    cart = await prisma.cart.create({
+      data: {
+        user: { connect: { id: userId } },
+        items: {
+          create: {
+            product: { connect: { id: productId } },
+            quantity
+          }
+        }
+      },
+      include: { items: true }
+    });
+  } else {
+    const existingItem = cart.items.find(item => item.productId === productId);
+    if (existingItem) {
+      await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: existingItem.quantity + quantity }
+      });
+    } else {
+      await prisma.cartItem.create({
+        data: {
+          cart: { connect: { id: cart.id } },
+          product: { connect: { id: productId } },
+          quantity
+        }
+      });
+    }
+    cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: { items: { include: { product: true } } }
+    });
+  }
+  return cart;
+};
+
+export const getCart = async (userId) => {
+  return prisma.cart.findUnique({
+    where: { userId },
+    include: { 
+      items: { 
+        include: { product: true } 
+      } 
+    }
+  });
+};

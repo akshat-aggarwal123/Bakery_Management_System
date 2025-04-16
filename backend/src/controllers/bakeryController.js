@@ -6,10 +6,12 @@ import {
   createProduct as createProductService, // Renamed imported function.
   listProducts, 
   placeOrder, 
-  getOrderStatus 
+  getOrderStatus,
+  addToCart as addToCartService, // Add this line
+  getCart as getCartService // Add this line
 } from '../services/bakeryService.js';
 
-// Register Controller
+
 // Register Controller
 export const register = async (req, res) => {
   try {
@@ -75,9 +77,12 @@ export const createProduct = [auth, admin, async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const products = await listProducts();
+
+    console.log('Fetched all products');
+
     res.json(products);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    handleError(res, error);
   }
 };
 
@@ -98,6 +103,31 @@ export const getOrder = [auth, async (req, res) => {
     const order = await getOrderStatus(parseInt(req.params.id, 10));
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}];
+
+export const addToCart = [auth, async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    if (!productId || !quantity) {
+      return res.status(400).json({ error: 'Product ID and quantity are required' });
+    }
+    const cart = await addToCart(req.user.id, productId, quantity);
+    res.json(cart);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+}];
+
+export const getCart = [auth, async (req, res) => {
+  try {
+    const cart = await getCart(req.user.id);
+    if (!cart) {
+      return res.status(404).json({ error: 'Cart not found' });
+    }
+    res.json(cart);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
