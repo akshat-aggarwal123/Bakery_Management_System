@@ -108,22 +108,26 @@ export const getOrder = [auth, async (req, res) => {
   }
 }];
 
+// Add to Cart Controller
 export const addToCart = [auth, async (req, res) => {
   try {
     const { productId, quantity } = req.body;
     if (!productId || !quantity) {
       return res.status(400).json({ error: 'Product ID and quantity are required' });
     }
-    const cart = await addToCart(req.user.id, productId, quantity);
+    // Use addToCartService instead of addToCart
+    const cart = await addToCartService(req.user.id, productId, quantity);
     res.json(cart);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 }];
 
+// Get Cart Controller
 export const getCart = [auth, async (req, res) => {
   try {
-    const cart = await getCart(req.user.id);
+    // Use getCartService instead of getCart
+    const cart = await getCartService(req.user.id);
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
     }
