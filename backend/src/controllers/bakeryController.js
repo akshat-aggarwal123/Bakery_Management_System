@@ -10,25 +10,30 @@ import {
 } from '../services/bakeryService.js';
 
 // Register Controller
+// Register Controller
 export const register = async (req, res) => {
   try {
     const { email, password, is_admin } = req.body;
-    
-    // Allow admin creation if the request is from localhost (IPv4 or IPv6)
-    // or if the request already comes from an admin user.
-    const allowedToSetAdmin =
-      (req.ip === '127.0.0.1' || req.ip === '::1') || req.user?.isAdmin;
-    
-    // Use the provided is_admin flag only if allowed; otherwise default to false.
+
+    // Improved IP check for localhost (handles IPv4, IPv6, and ::ffff:127.*)
+    const isLocalhost = ['127.0.0.1', '::1'].includes(req.ip) || req.ip.startsWith('::ffff:127.');
+
+    // Allow admin creation only from localhost or an already authenticated admin
+    const allowedToSetAdmin = isLocalhost || req.user?.isAdmin;
+
+    // Use the is_admin flag only if allowed
     const finalIsAdmin = allowedToSetAdmin ? Boolean(is_admin) : false;
-    
+
+    // Register the user
     const user = await registerUser(email, password, finalIsAdmin);
-    // Remove password from the response
+
+    // Remove password from response
     res.status(201).json({ ...user, password: undefined });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 
 
