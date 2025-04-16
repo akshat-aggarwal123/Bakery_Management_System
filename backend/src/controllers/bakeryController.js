@@ -1,19 +1,38 @@
 import { auth, admin } from '../middleware/auth.js';
+import { 
+  registerUser, 
+  loginUser, 
+  listUsers, 
+  createProduct as createProductService, // Renamed imported function.
+  listProducts, 
+  placeOrder, 
+  getOrderStatus 
+} from '../services/bakeryService.js';
 
+// Register Controller
 export const register = async (req, res) => {
   try {
     const { email, password, is_admin } = req.body;
     
-    // Only allow admin creation if request is from localhost or has valid token
-    const isAdmin = (req.ip === '127.0.0.1') || req.user?.isAdmin;
+    // Allow admin creation if the request is from localhost (IPv4 or IPv6)
+    // or if the request already comes from an admin user.
+    const allowedToSetAdmin =
+      (req.ip === '127.0.0.1' || req.ip === '::1') || req.user?.isAdmin;
     
-    const user = await registerUser(email, password, isAdmin);
+    // Use the provided is_admin flag only if allowed; otherwise default to false.
+    const finalIsAdmin = allowedToSetAdmin ? Boolean(is_admin) : false;
+    
+    const user = await registerUser(email, password, finalIsAdmin);
+    // Remove password from the response
     res.status(201).json({ ...user, password: undefined });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
+
+
+// Login Controller
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -25,6 +44,7 @@ export const login = async (req, res) => {
   }
 };
 
+// Get All Users (Admin Only)
 export const getUsers = [auth, admin, async (req, res) => {
   try {
     const users = await listUsers();
@@ -34,16 +54,19 @@ export const getUsers = [auth, admin, async (req, res) => {
   }
 }];
 
+// Create Product (Admin Only)
 export const createProduct = [auth, admin, async (req, res) => {
   try {
     const { name, price, quantity } = req.body;
-    const product = await createProduct(name, price, quantity, req.user.id);
+    // Use the renamed service function.
+    const product = await createProductService(name, price, quantity, req.user.id);
     res.status(201).json(product);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 }];
 
+// Get All Products
 export const getProducts = async (req, res) => {
   try {
     const products = await listProducts();
@@ -53,6 +76,7 @@ export const getProducts = async (req, res) => {
   }
 };
 
+// Create Order (Authenticated User)
 export const createOrder = [auth, async (req, res) => {
   try {
     const { productId, quantity } = req.body;
@@ -63,9 +87,10 @@ export const createOrder = [auth, async (req, res) => {
   }
 }];
 
+// Get Order Status (Authenticated User)
 export const getOrder = [auth, async (req, res) => {
   try {
-    const order = await getOrderStatus(parseInt(req.params.id));
+    const order = await getOrderStatus(parseInt(req.params.id, 10));
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
   } catch (error) {
