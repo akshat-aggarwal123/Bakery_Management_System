@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import api from '../services/api';
-import ProductCard from '../components/ProductCard';
+import { listProducts } from '../../utils/api';
+import ProductCard from './ProductCard';
 
-const Products = () => {
+const ProductList = () => {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const data = await api.getProducts();
+      const data = await listProducts();
       setProducts(data);
     };
     fetchProducts();
@@ -15,8 +15,8 @@ const Products = () => {
 
   return (
     <div>
-      <h1>Products</h1>
-      <div className="product-list">
+      <h2>Products</h2>
+      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -25,4 +25,4 @@ const Products = () => {
   );
 };
 
-export default Products;
+export default ProductList;
